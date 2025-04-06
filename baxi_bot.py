@@ -9,8 +9,17 @@ from telegram.ext import (
     filters
 )
 
-# Устанавливаем API-ключ OpenAI из переменной окружения
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Получаем ключи из переменных окружения
+openai_api_key = os.getenv("OPENAI_API_KEY")
+telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+
+if not openai_api_key:
+    raise ValueError("OPENAI_API_KEY не установлен в переменных среды.")
+if not telegram_token:
+    raise ValueError("TELEGRAM_BOT_TOKEN не установлен в переменных среды.")
+
+# Устанавливаем ключ OpenAI
+openai.api_key = openai_api_key
 
 # Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -20,7 +29,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
 
-    # Отправляем сообщение в OpenAI и получаем ответ
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4o",
@@ -33,16 +41,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         answer = f"Ошибка при обращении к OpenAI: {e}"
 
-    # Отправляем ответ пользователю
     await update.message.reply_text(answer)
 
 # Запуск бота
 if __name__ == "__main__":
-    telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
-
-    if not telegram_token:
-        raise ValueError("TELEGRAM_BOT_TOKEN не установлен в переменных среды.")
-
     app = ApplicationBuilder().token(telegram_token).build()
 
     app.add_handler(CommandHandler("start", start))
