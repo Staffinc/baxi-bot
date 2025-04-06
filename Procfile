@@ -1,0 +1,1 @@
+worker: python baxi_bot.py
