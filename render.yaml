@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: baxi-bot
+    runtime: python
+    buildCommand: ""
+    startCommand: python baxi_bot.py
+    envVars:
+      - key: OPENAI_API_KEY
+        value: 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        # ← Твой OpenAI API ключ
+      - key: TELEGRAM_BOT_TOKEN
+        value: 7595091573:AAGEwZEgJtGQXDyjejHz8Ln00-0v5p1I2TA
