@@ -1,54 +1,47 @@
 import os
-import openai
+import logging
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters
-)
+from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
+from openai import OpenAI
 
-# Получаем ключи из переменных окружения
-openai_api_key = os.getenv("OPENAI_API_KEY")
-telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+# Логгирование
+logging.basicConfig(level=logging.INFO)
 
-if not openai_api_key:
-    raise ValueError("OPENAI_API_KEY не установлен в переменных среды.")
-if not telegram_token:
+# Получаем токены из переменных окружения
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+if not TELEGRAM_BOT_TOKEN:
     raise ValueError("TELEGRAM_BOT_TOKEN не установлен в переменных среды.")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY не установлен в переменных среды.")
 
-# Устанавливаем ключ OpenAI
-openai.api_key = openai_api_key
+# Инициализация OpenAI клиента
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Команда /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет! Задай мне вопрос по котлам Baxi.")
-
-# Ответ на сообщение
+# Обработчик сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
 
     try:
-        response = openai.ChatCompletion.create(
+        response = openai_client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "Ты помощник по ремонту котлов Baxi."},
+                {"role": "system", "content": "Ты помощник слесаря по газовым котлам Бакси."},
                 {"role": "user", "content": user_message}
-            ]
+            ],
+            temperature=0.7
         )
-        answer = response['choices'][0]['message']['content']
+        reply = response.choices[0].message.content
     except Exception as e:
-        answer = f"Ошибка при обращении к OpenAI: {e}"
+        logging.error(f"Ошибка GPT: {e}")
+        reply = "Произошла ошибка при обращении к GPT."
 
-    await update.message.reply_text(answer)
+    await update.message.reply_text(reply)
 
-# Запуск бота
-if __name__ == "__main__":
-    app = ApplicationBuilder().token(telegram_token).build()
-
-    app.add_handler(CommandHandler("start", start))
+# Основной запуск
+if __name__ == '__main__':
+    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
     print("Бот запущен!")
     app.run_polling()
